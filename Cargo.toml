@@ -1,0 +1,15 @@
+[package]
+name = "hanmo-combinator"
+version = "0.1.0"
+authors = ["finalchild <me@finalchild.dev>"]
+edition = "2021"
+description = "Converts the Hanmo base bmp file to unifont hex file"
+repository = "https://github.com/mc-kor/hanmo-combinator"
+license = "ISC"
+
+[dependencies]
+image = "0.24.6"
+toml = "0.7.3"
+regex = "1.8.1"
+serde = { version = "1.0.162", features = ["derive"] }
+eyre = "0.6.8"
