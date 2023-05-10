@@ -26,9 +26,13 @@ pub struct Workspace {
 pub struct GlobalConfig {
     #[serde(default = "default_size")]
     pub size: u32,
+    #[serde(default = "default_warn_no_match")]
+    pub warn_no_match: bool,
 }
 
 fn default_size() -> u32 { 16 }
+
+fn default_warn_no_match() -> bool { false }
 
 pub struct GlyphConfig {
     pub conditions: Vec<ConditionEntry>,

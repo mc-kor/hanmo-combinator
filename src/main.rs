@@ -3,7 +3,6 @@ pub mod hangul;
 
 use std::{fs::File, io::{BufWriter, Write}, env::current_dir};
 use workspace::Workspace;
-use eyre::eyre;
 use hangul::{NUM_INI, NUM_MID, NUM_FIN, syllable_codepoint};
 use image::{GenericImageView, DynamicImage};
 
@@ -51,14 +50,20 @@ fn main() -> eyre::Result<()> {
     for ini in 0..NUM_INI {
         for mid in 0..NUM_MID {
             for fin in 0..NUM_FIN {
-                let ini_variant = workspace.find_ini_variant(ini, mid, fin).ok_or(eyre!("couldn't find ini variant for {ini} {mid} {fin}"))?;
-                let mid_variant = workspace.find_mid_variant(ini, mid, fin).ok_or(eyre!("couldn't find ini variant for {ini} {mid} {fin}"))?;
-                let fin_variant = workspace.find_fin_variant(ini, mid, fin).ok_or(eyre!("couldn't find ini variant for {ini} {mid} {fin}"))?;
+                let ini_variant = workspace.find_ini_variant(ini, mid, fin);
+                let mid_variant = workspace.find_mid_variant(ini, mid, fin);
+                let fin_variant = workspace.find_fin_variant(ini, mid, fin);
+
+                if workspace.global_config.warn_no_match {
+                    if ini_variant.is_none() { eprintln!("couldn't find ini variant for {ini} {mid} {fin}") };
+                    if mid_variant.is_none() { eprintln!("couldn't find mid variant for {ini} {mid} {fin}") };
+                    if fin_variant.is_none() { eprintln!("couldn't find fin variant for {ini} {mid} {fin}") };
+                }
 
                 let mut to_buf = [0u8; 32];
-                copy_ini(&workspace, ini, ini_variant, &mut to_buf);
-                copy_mid(&workspace, mid, mid_variant, &mut to_buf);
-                copy_fin(&workspace, fin, fin_variant, &mut to_buf);
+                if let Some(ini_variant) = ini_variant { copy_ini(&workspace, ini, ini_variant, &mut to_buf); }
+                if let Some(mid_variant) = mid_variant { copy_mid(&workspace, mid, mid_variant, &mut to_buf); }
+                if let Some(fin_variant) = fin_variant { copy_fin(&workspace, fin, fin_variant, &mut to_buf); }
 
                 let syllable = syllable_codepoint(ini, mid, fin);
                 write!(out, "{syllable:04X}:")?;
