@@ -28,11 +28,21 @@ pub struct GlobalConfig {
     pub size: u32,
     #[serde(default = "default_warn_no_match")]
     pub warn_no_match: bool,
+    #[serde(default = "default_out_dir")]
+    pub out_dir: String,
 }
 
 fn default_size() -> u32 { 16 }
 
 fn default_warn_no_match() -> bool { false }
+
+fn default_out_dir() -> String { "dist".to_owned() }
+
+impl Default for GlobalConfig {
+    fn default() -> Self {
+        Self { size: default_size(), warn_no_match: default_warn_no_match(), out_dir: default_out_dir() }
+    }
+}
 
 pub struct GlyphConfig {
     pub conditions: Vec<ConditionEntry>,
@@ -118,45 +128,64 @@ impl<'de> Deserialize<'de> for GlyphConfig {
 
 impl Workspace {
     pub fn load(path: PathBuf) -> eyre::Result<Workspace> {
-        let global_config = toml::from_str::<GlobalConfig>(&fs::read_to_string(path.join("config.toml"))?)?;
+        let global_config = {
+            let path = path.join("config.toml");
+            if !fs::try_exists(&path)? {
+                GlobalConfig::default()
+            } else {
+                toml::from_str::<GlobalConfig>(&fs::read_to_string(&path)?)?
+            }
+        };
 
-        let ini_configs = array::from_fn(|ini| {
+        let ini_configs = array::try_from_fn(|ini| -> eyre::Result<_> {
             let path = path.join(format!("src/ini/{}/config.toml", INI_CHARS[ini as usize]));
-            let Ok(glyph_config_str) = fs::read_to_string(path) else { return GlyphConfig::default() };
-            let Ok(glyph_config) = toml::from_str::<GlyphConfig>(&glyph_config_str) else { return GlyphConfig::default() };
-            glyph_config
-        });
-        let mid_configs = array::from_fn(|mid| {
+            if !fs::try_exists(&path)? {
+                Ok(GlyphConfig::default())
+            } else {
+                Ok(toml::from_str::<GlyphConfig>(&fs::read_to_string(&path)?)?)
+            }
+        })?;
+        let mid_configs = array::try_from_fn(|mid| -> eyre::Result<_> {
             let path = path.join(format!("src/mid/{}/config.toml", MID_CHARS[mid as usize]));
-            let Ok(glyph_config_str) = fs::read_to_string(path) else { return GlyphConfig::default() };
-            let Ok(glyph_config) = toml::from_str::<GlyphConfig>(&glyph_config_str) else { return GlyphConfig::default() };
-            glyph_config
-        });
-        let fin_configs = array::from_fn(|fin| {
+            if !fs::try_exists(&path)? {
+                Ok(GlyphConfig::default())
+            } else {
+                Ok(toml::from_str::<GlyphConfig>(&fs::read_to_string(&path)?)?)
+            }
+        })?;
+        let fin_configs = array::try_from_fn(|fin| -> eyre::Result<_> {
             let path = path.join(format!("src/fin/{}/config.toml", FIN_CHARS[fin as usize]));
-            let Ok(glyph_config_str) = fs::read_to_string(path) else { return GlyphConfig::default() };
-            let Ok(glyph_config) = toml::from_str::<GlyphConfig>(&glyph_config_str) else { return GlyphConfig::default() };
-            glyph_config
-        });
+            if !fs::try_exists(&path)? {
+                Ok(GlyphConfig::default())
+            } else {
+                Ok(toml::from_str::<GlyphConfig>(&fs::read_to_string(&path)?)?)
+            }
+        })?;
 
-        let ini_glyphs = array::from_fn(|ini| {
+        let ini_glyphs = array::try_from_fn(|ini| -> eyre::Result<_> {
             let path = path.join(format!("src/ini/{}/glyphs.bmp", INI_CHARS[ini as usize]));
-            let Ok(reader) = ImageReader::open(path) else { return None; };
-            let Ok(image) = reader.decode() else { return None; };
-            Some(image)
-        });
-        let mid_glyphs = array::from_fn(|mid| {
+            if !fs::try_exists(&path)? {
+                Ok(None)
+            } else {
+                Ok(Some(ImageReader::open(path)?.decode()?))
+            }
+        })?;
+        let mid_glyphs = array::try_from_fn(|mid| -> eyre::Result<_> {
             let path = path.join(format!("src/mid/{}/glyphs.bmp", MID_CHARS[mid as usize]));
-            let Ok(reader) = ImageReader::open(path) else { return None; };
-            let Ok(image) = reader.decode() else { return None; };
-            Some(image)
-        });
-        let fin_glyphs = array::from_fn(|fin| {
+            if !fs::try_exists(&path)? {
+                Ok(None)
+            } else {
+                Ok(Some(ImageReader::open(path)?.decode()?))
+            }
+        })?;
+        let fin_glyphs = array::try_from_fn(|fin| -> eyre::Result<_> {
             let path = path.join(format!("src/fin/{}/glyphs.bmp", FIN_CHARS[fin as usize]));
-            let Ok(reader) = ImageReader::open(path) else { return None; };
-            let Ok(image) = reader.decode() else { return None; };
-            Some(image)
-        });
+            if !fs::try_exists(&path)? {
+                Ok(None)
+            } else {
+                Ok(Some(ImageReader::open(path)?.decode()?))
+            }
+        })?;
 
         Ok(Workspace {
             path,

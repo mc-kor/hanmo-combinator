@@ -1,7 +1,10 @@
+#![feature(fs_try_exists)]
+#![feature(array_try_from_fn)]
+
 pub mod workspace;
 pub mod hangul;
 
-use std::{fs::File, io::{BufWriter, Write}, env::current_dir};
+use std::{fs::{File, self}, io::{BufWriter, Write}, env::current_dir};
 use workspace::Workspace;
 use hangul::{NUM_INI, NUM_MID, NUM_FIN, syllable_codepoint};
 use image::{GenericImageView, DynamicImage};
@@ -45,7 +48,13 @@ fn copy_fin(workspace: &Workspace, fin: u32, variant: u32, to: &mut [u8; 32]) {
 fn main() -> eyre::Result<()> {
     let workspace = Workspace::load(current_dir()?)?;
 
-    let mut out = BufWriter::new(File::create("out.hex")?);
+    let out_dir = workspace.path.join(&workspace.global_config.out_dir);
+    fs::create_dir_all(&out_dir)?;
+
+    let mut out = BufWriter::new(File::create(out_dir.join("out.hex"))?);
+    let mut out_json = BufWriter::new(File::create(out_dir.join("selection.json"))?);
+
+    write!(out_json, "[")?;
 
     for ini in 0..NUM_INI {
         for mid in 0..NUM_MID {
@@ -59,6 +68,13 @@ fn main() -> eyre::Result<()> {
                     if mid_variant.is_none() { eprintln!("couldn't find mid variant for {ini} {mid} {fin}") };
                     if fin_variant.is_none() { eprintln!("couldn't find fin variant for {ini} {mid} {fin}") };
                 }
+
+                if ini != 0 || mid != 0 || fin != 0 { write!(out_json, ",")?; }
+                write!(out_json, "[{},{},{}]",
+                    ini_variant.map_or("null".to_owned(), |variant| variant.to_string()),
+                    mid_variant.map_or("null".to_owned(), |variant| variant.to_string()),
+                    fin_variant.map_or("null".to_owned(), |variant| variant.to_string()),
+                )?;
 
                 let mut to_buf = [0u8; 32];
                 if let Some(ini_variant) = ini_variant { copy_ini(&workspace, ini, ini_variant, &mut to_buf); }
@@ -74,6 +90,8 @@ fn main() -> eyre::Result<()> {
             }
         }
     }
+
+    write!(out_json, "]")?;
 
     return Ok(());
 }
