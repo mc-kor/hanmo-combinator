@@ -66,7 +66,7 @@ fn main() -> eyre::Result<()> {
                 if workspace.global_config.warn_no_match {
                     if ini_variant.is_none() { eprintln!("couldn't find ini variant for {ini} {mid} {fin}") };
                     if mid_variant.is_none() { eprintln!("couldn't find mid variant for {ini} {mid} {fin}") };
-                    if fin_variant.is_none() { eprintln!("couldn't find fin variant for {ini} {mid} {fin}") };
+                    if fin != 0 && fin_variant.is_none() { eprintln!("couldn't find fin variant for {ini} {mid} {fin}") };
                 }
 
                 if ini != 0 || mid != 0 || fin != 0 { write!(out_json, ",")?; }
