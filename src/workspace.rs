@@ -137,7 +137,7 @@ impl Workspace {
             }
         };
 
-        let ini_configs = array::try_from_fn(|ini| -> eyre::Result<_> {
+        let mut ini_configs = array::try_from_fn(|ini| -> eyre::Result<_> {
             let path = path.join(format!("src/ini/{}/config.toml", INI_CHARS[ini as usize]));
             if !fs::try_exists(&path)? {
                 Ok(GlyphConfig::default())
@@ -145,7 +145,7 @@ impl Workspace {
                 Ok(toml::from_str::<GlyphConfig>(&fs::read_to_string(&path)?)?)
             }
         })?;
-        let mid_configs = array::try_from_fn(|mid| -> eyre::Result<_> {
+        let mut mid_configs = array::try_from_fn(|mid| -> eyre::Result<_> {
             let path = path.join(format!("src/mid/{}/config.toml", MID_CHARS[mid as usize]));
             if !fs::try_exists(&path)? {
                 Ok(GlyphConfig::default())
@@ -153,7 +153,7 @@ impl Workspace {
                 Ok(toml::from_str::<GlyphConfig>(&fs::read_to_string(&path)?)?)
             }
         })?;
-        let fin_configs = array::try_from_fn(|fin| -> eyre::Result<_> {
+        let mut fin_configs = array::try_from_fn(|fin| -> eyre::Result<_> {
             let path = path.join(format!("src/fin/{}/config.toml", FIN_CHARS[fin as usize]));
             if !fs::try_exists(&path)? {
                 Ok(GlyphConfig::default())
@@ -186,6 +186,16 @@ impl Workspace {
                 Ok(Some(ImageReader::open(path)?.decode()?))
             }
         })?;
+
+        for ini_config in &mut ini_configs {
+            ini_config.conditions.sort_by_key(|ConditionEntry { priority, .. }| *priority);
+        }
+        for mid_config in &mut mid_configs {
+            mid_config.conditions.sort_by_key(|ConditionEntry { priority, .. }| *priority);
+        }
+        for fin_config in &mut fin_configs {
+            fin_config.conditions.sort_by_key(|ConditionEntry { priority, .. }| *priority);
+        }
 
         Ok(Workspace {
             path,
