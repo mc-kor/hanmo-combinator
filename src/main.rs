@@ -14,7 +14,7 @@ fn copy_sqr(size: u32, from_img: &DynamicImage, from_x: u32, from_y: u32, to: &m
         for y in 0..size {
             let pixel = from_img.get_pixel(from_x + x, from_y + y);
             let to_idx = x + y * size;
-            if pixel[0] < 64 && pixel[1] < 64 && pixel[2] < 64 && pixel[3] >= 192 {
+            if pixel[0] < 128 && pixel[1] < 128 && pixel[2] < 128 && pixel[3] >= 192 {
                 to[(to_idx / 8) as usize] |= 1u8 << (7 - to_idx % 8);
             }
         }
