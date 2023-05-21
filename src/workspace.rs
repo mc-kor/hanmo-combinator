@@ -163,27 +163,36 @@ impl Workspace {
         })?;
 
         let ini_glyphs = array::try_from_fn(|ini| -> eyre::Result<_> {
-            let path = path.join(format!("src/ini/{}/glyphs.bmp", INI_CHARS[ini as usize]));
-            if !fs::try_exists(&path)? {
-                Ok(None)
+            let path1 = path.join(format!("src/ini/{}/glyphs.bmp", INI_CHARS[ini as usize]));
+            let path2 = path.join(format!("src/ini/{}/glyphs.{}.bmp", INI_CHARS[ini as usize], INI_CHARS[ini as usize]));
+            if fs::try_exists(&path1)? {
+                Ok(Some(ImageReader::open(path1)?.decode()?))
+            } else if fs::try_exists(&path2)? {
+                Ok(Some(ImageReader::open(path2)?.decode()?))
             } else {
-                Ok(Some(ImageReader::open(path)?.decode()?))
+                Ok(None)
             }
         })?;
         let mid_glyphs = array::try_from_fn(|mid| -> eyre::Result<_> {
-            let path = path.join(format!("src/mid/{}/glyphs.bmp", MID_CHARS[mid as usize]));
-            if !fs::try_exists(&path)? {
-                Ok(None)
+            let path1 = path.join(format!("src/mid/{}/glyphs.bmp", MID_CHARS[mid as usize]));
+            let path2 = path.join(format!("src/mid/{}/glyphs.{}.bmp", MID_CHARS[mid as usize], MID_CHARS[mid as usize]));
+            if fs::try_exists(&path1)? {
+                Ok(Some(ImageReader::open(path1)?.decode()?))
+            } else if fs::try_exists(&path2)? {
+                Ok(Some(ImageReader::open(path2)?.decode()?))
             } else {
-                Ok(Some(ImageReader::open(path)?.decode()?))
+                Ok(None)
             }
         })?;
         let fin_glyphs = array::try_from_fn(|fin| -> eyre::Result<_> {
-            let path = path.join(format!("src/fin/{}/glyphs.bmp", FIN_CHARS[fin as usize]));
-            if !fs::try_exists(&path)? {
-                Ok(None)
+            let path1 = path.join(format!("src/fin/{}/glyphs.bmp", FIN_CHARS[fin as usize]));
+            let path2 = path.join(format!("src/fin/{}/glyphs.{}.bmp", FIN_CHARS[fin as usize], FIN_CHARS[fin as usize]));
+            if fs::try_exists(&path1)? {
+                Ok(Some(ImageReader::open(path1)?.decode()?))
+            } else if fs::try_exists(&path2)? {
+                Ok(Some(ImageReader::open(path2)?.decode()?))
             } else {
-                Ok(Some(ImageReader::open(path)?.decode()?))
+                Ok(None)
             }
         })?;
 
