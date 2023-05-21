@@ -1,0 +1,28 @@
+on:
+- push
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly
+    - uses: actions-rs/cargo@v1
+      with:
+        command: build
+        toolchain: nightly
+        args: --release
+    - uses: actions/upload-artifact@v3
+      with:
+        name: hanmo-combinator
+        path: target/release/hanmo-combinator
+    - uses: softprops/action-gh-release@v1
+      if: github.ref == 'refs/heads/main'
+      with:
+        prerelease: true
+        files: target/release/hanmo-combinator
+        tag_name: main
