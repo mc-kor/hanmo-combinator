@@ -8,6 +8,7 @@ use std::{fs::{File, self}, io::{BufWriter, Write}, env::current_dir};
 use workspace::Workspace;
 use hangul::{NUM_INI, NUM_MID, NUM_FIN, syllable_codepoint, INI_CHARS, MID_CHARS, FIN_CHARS};
 use image::{GenericImageView, DynamicImage};
+use zip::{ZipWriter, write::FileOptions};
 
 fn copy_sqr(size: u32, from_img: &DynamicImage, from_x: u32, from_y: u32, to: &mut [u8; 32]) {
     for x in 0..size {
@@ -51,8 +52,13 @@ fn main() -> eyre::Result<()> {
     let out_dir = workspace.path.join(&workspace.global_config.out_dir);
     fs::create_dir_all(&out_dir)?;
 
-    let mut out = BufWriter::new(File::create(out_dir.join("out.hex"))?);
+    let mut out_all = BufWriter::new(File::create(out_dir.join("out.hex"))?);
+    let mut out_complete_only = BufWriter::new(File::create(out_dir.join("out-complete-only.hex"))?);
+    let out_zip: BufWriter<File> = BufWriter::new(File::create(out_dir.join("out.zip"))?);
     let mut out_json = BufWriter::new(File::create(out_dir.join("selection.json"))?);
+
+    let mut zip = ZipWriter::new(out_zip);
+    zip.start_file("out.hex", FileOptions::default())?;
 
     write!(out_json, "[")?;
 
@@ -85,16 +91,22 @@ fn main() -> eyre::Result<()> {
                 if let Some(fin_variant) = fin_variant { copy_fin(&workspace, fin, fin_variant, &mut to_buf); }
 
                 let syllable = syllable_codepoint(ini, mid, fin);
-                write!(out, "{syllable:04X}:")?;
-                for b in to_buf {
-                    write!(out, "{b:02X}")?;
+                let complete = ini_variant.is_some() && mid_variant.is_some() && (fin == 0 || fin_variant.is_some());
+                let outs: Vec<&mut dyn Write> = if complete { vec![&mut out_all, &mut out_complete_only, &mut zip] } else { vec![&mut out_all] };
+                for out in outs {
+                    write!(out, "{syllable:04X}:")?;
+                    for b in to_buf {
+                        write!(out, "{b:02X}")?;
+                    }
+                    writeln!(out)?;
                 }
-                writeln!(out)?;
             }
         }
     }
 
     write!(out_json, "]")?;
+
+    zip.finish()?;
 
     return Ok(());
 }
