@@ -6,7 +6,7 @@ pub mod hangul;
 
 use std::{fs::{File, self}, io::{BufWriter, Write}, env::current_dir};
 use workspace::Workspace;
-use hangul::{NUM_INI, NUM_MID, NUM_FIN, syllable_codepoint};
+use hangul::{NUM_INI, NUM_MID, NUM_FIN, syllable_codepoint, INI_CHARS, MID_CHARS, FIN_CHARS};
 use image::{GenericImageView, DynamicImage};
 
 fn copy_sqr(size: u32, from_img: &DynamicImage, from_x: u32, from_y: u32, to: &mut [u8; 32]) {
@@ -64,9 +64,12 @@ fn main() -> eyre::Result<()> {
                 let fin_variant = workspace.find_fin_variant(ini, mid, fin);
 
                 if workspace.global_config.warn_no_match {
-                    if ini_variant.is_none() { eprintln!("couldn't find ini variant for {ini} {mid} {fin}") };
-                    if mid_variant.is_none() { eprintln!("couldn't find mid variant for {ini} {mid} {fin}") };
-                    if fin != 0 && fin_variant.is_none() { eprintln!("couldn't find fin variant for {ini} {mid} {fin}") };
+                    let ini_char = INI_CHARS[ini as usize];
+                    let mid_char = MID_CHARS[mid as usize];
+                    let fin_char = FIN_CHARS[fin as usize];
+                    if ini_variant.is_none() { eprintln!("couldn't find ini variant for {ini_char}{mid_char}{fin_char}") };
+                    if mid_variant.is_none() { eprintln!("couldn't find mid variant for {ini_char}{mid_char}{fin_char}") };
+                    if fin != 0 && fin_variant.is_none() { eprintln!("couldn't find fin variant for {ini_char}{mid_char}{fin_char}") };
                 }
 
                 if ini != 0 || mid != 0 || fin != 0 { write!(out_json, ",")?; }
